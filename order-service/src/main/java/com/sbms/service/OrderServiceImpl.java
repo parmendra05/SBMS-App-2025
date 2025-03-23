@@ -6,14 +6,14 @@ import com.sbms.pojo.User;
 import com.sbms.repository.OrderRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestTemplate;
+import org.springframework.web.reactive.function.client.WebClient;
 
 import java.util.List;
 @Service
 public class OrderServiceImpl implements OrderService{
 
     @Autowired
-    private RestTemplate restTemplate;
+    private WebClient webClient;
     private final String USER_SERVICE_URL ="http://localhost:8081/api/users/";
 
     @Autowired
@@ -41,7 +41,9 @@ public class OrderServiceImpl implements OrderService{
 
     @Override
     public Response getOrderByUserId(Long id) {
-        User user = restTemplate.getForEntity("http://localhost:8081/api/users/"+id , User.class).getBody();
+
+        User user = webClient.get().uri(USER_SERVICE_URL+id).retrieve().bodyToMono(User.class).block();
+
         System.out.println("User : "+user);
 
         List<Order> orders = orderRepository.findAllByUserId(id);
