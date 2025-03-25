@@ -4,10 +4,13 @@ import com.sbms.entity.Order;
 import com.sbms.pojo.Response;
 import com.sbms.pojo.User;
 import com.sbms.repository.OrderRepository;
+import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
+import org.hibernate.collection.spi.PersistentBag;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 
+import java.util.ArrayList;
 import java.util.List;
 @Service
 public class OrderServiceImpl implements OrderService{
@@ -40,6 +43,7 @@ public class OrderServiceImpl implements OrderService{
     }
 
     @Override
+    @CircuitBreaker(name = "USER-SERVICE" , fallbackMethod = "fallbackGetUserDetails")
     public Response getOrderByUserId(Long id) {
 
         User user = webClient.get().uri(USER_SERVICE_URL+id).retrieve().bodyToMono(User.class).block();
@@ -54,4 +58,19 @@ public class OrderServiceImpl implements OrderService{
         response.setOrders(orders);
         return response;
     }
+
+    public Response fallbackGetUserDetails(Long id, Exception e) {
+        System.out.println("User Service is down! Returning default response...");
+
+        User defaultUser = new User();
+        defaultUser.setId(0L);
+        defaultUser.setName("Default User");
+
+        Response response = new Response();
+        response.setOrders(new ArrayList<>());
+        response.setUser(defaultUser);
+
+        return response;
+    }
+
 }
